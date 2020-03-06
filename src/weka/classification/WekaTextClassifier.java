@@ -1,4 +1,4 @@
-package wekaTest1;
+package weka.classification;
 
 import java.io.*;
 import java.util.ArrayList;
