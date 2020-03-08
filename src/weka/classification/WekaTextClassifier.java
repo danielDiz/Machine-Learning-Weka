@@ -14,6 +14,7 @@ import weka.core.Attribute;
 import weka.core.Instances;
 import weka.core.converters.ArffLoader.ArffReader;
 import weka.core.converters.ArffSaver;
+import weka.core.converters.TextDirectoryLoader;
 import weka.core.tokenizers.NGramTokenizer;
 import weka.filters.Filter;
 import weka.filters.unsupervised.attribute.StringToWordVector;
@@ -34,9 +35,9 @@ public class WekaTextClassifier {
 	private ArrayList<Attribute> wekaAttributes;
 
 	// declare and initialize file locations
-	// private static final String TRAIN_DATA = "data/train.txt";
+	private static final String TRAIN_DATA = "data/train/";
 	private static final String TRAIN_DATA_ARFF = "data/trainARFF.arff";
-	// private static final String TEST_DATA = "data/test.txt";
+	private static final String TEST_DATA = "data/test/";
 	private static final String TEST_DATA_ARFF = "data/testARFF.arff";
 	private static final String STOP_WORD_LIST = "data/stopwords.txt";
 
@@ -62,17 +63,19 @@ public class WekaTextClassifier {
 	
 	public void transform() {
 		try {
-			// trainData = loadRawDataset(TRAIN_DATA); //no need, but if we do need to look
-			// how to load with TextDirectoryLoader
-			// saveArff(trainData, TRAIN_ARFF_ARFF);
-			trainData = loadArff(TRAIN_DATA_ARFF);
+			
+			// load testdata
+			if (new File(TRAIN_DATA_ARFF).exists()) {
+				trainData = loadArff(TRAIN_DATA_ARFF);
+			} else {
+				trainData = loadTextDirectory(TRAIN_DATA);
+				saveArff(trainData, TRAIN_DATA_ARFF);
+			}
+			System.out.println("done");
 			trainData.setClassIndex(trainData.numAttributes() - 1);
 			filterTrain.setInputFormat(trainData);
 			classifier.setFilter(filterTrain);
 			
-			 
-			 
-
 			this.trainData = Filter.useFilter(trainData, filterTrain);
 
 		} catch (Exception e) {
@@ -135,18 +138,14 @@ public class WekaTextClassifier {
 			// load testdata
 			if (new File(TEST_DATA_ARFF).exists()) {
 				testData = loadArff(TEST_DATA_ARFF);
-				testData.setClassIndex(testData.numAttributes() - 1);
-				filterTest.setInputFormat(testData);
-				testData = Filter.useFilter(testData, filterTest);
 			} else {
-				/*
-				 * cant do for now 
-				 * testData = loadRawDataset(TEST_DATA); 
-				 * saveArff(testData, TEST_DATA_ARFF);
-				 */
-				testData = loadArff(TEST_DATA_ARFF);
-				testData.setClassIndex(0);
+				testData = loadTextDirectory(TEST_DATA);
+				saveArff(testData, TEST_DATA_ARFF);
 			}
+			testData.setClassIndex(testData.numAttributes() - 1);
+			filterTest.setInputFormat(testData);
+			testData = Filter.useFilter(testData, filterTest);
+			
 			//evaluation
 			Evaluation eval = new Evaluation(trainData);
 			eval.evaluateModel(classifier, testData);
@@ -189,36 +188,28 @@ public class WekaTextClassifier {
 		}
 	}
 
-	/**
-	 * Loads a dataset in space seperated text file and convert it to Arff format.
-	 * 
-	 * @param fileName The name of the file.
-	 */
 	
-	 //public Instances loadRawDataset(String filename) { 
-	 //Create an empty
-	 //training set name the relation “Rel”. set intial capacity of 10
-		 
-		 //TextDirectoryLoader loader = new TextDirectoryLoader();
-		 //loader.setDirectory(new File(filename));
-		 
+	public Instances loadTextDirectory(String fileName) {
+		System.out.println("Loading from: " + fileName);
+		try {
+			TextDirectoryLoader loader = new TextDirectoryLoader();
+			loader.setDirectory(new File(fileName));
+			Instances rawData = loader.getDataSet();
+			
+			return rawData;
+		} catch (IOException e) {
+			e.printStackTrace();
+			return null;
+		}
+	}
 	
-		 //Instances dataRaw = loader.getDataSet();
-	 //}
-
-	/**
-	 * Loads a dataset in ARFF format. If the file does not exist, or it has a wrong
-	 * format, the attribute trainData is null.
-	 * 
-	 * @param fileName The name of the file that stores the dataset.
-	 */
 	public Instances loadArff(String fileName) {
 		System.out.println("Loading file: " + fileName);
 		try {
 			BufferedReader reader = new BufferedReader(new FileReader(fileName));
 			ArffReader arff = new ArffReader(reader);
 			Instances dataset = arff.getData();
-			// replace with logger System.out.println("loaded dataset: " + fileName);
+			
 			reader.close();
 			return dataset;
 		} catch (IOException e) {
@@ -227,13 +218,9 @@ public class WekaTextClassifier {
 		}
 	}
 
-	/**
-	 * This method saves a dataset in ARFF format.
-	 * 
-	 * @param dataset  dataset in arff format
-	 * @param fileName The name of the file that stores the dataset.
-	 */
+	
 	public void saveArff(Instances dataset, String filename) {
+		System.out.println("Saving file:" + dataset.relationName() + "  to: " + filename);
 		try {
 			// initialize
 			ArffSaver arffSaverInstance = new ArffSaver();
@@ -281,11 +268,6 @@ public class WekaTextClassifier {
 			wt.fit(); 
 			wt.saveModel(MODEL); 
 		}
-
-		// run few predictions
-		// System.out.println("text 'how are you' is " + wt.predict("how are you ?"));
-		// System.out.println("text 'u have won the 1 lakh prize' is " + wt.predict("u
-		// have won the 1 lakh prize"));
 
 		// run evaluation
 		System.out.println("Evaluation Result: \n" + wt.evaluate());
