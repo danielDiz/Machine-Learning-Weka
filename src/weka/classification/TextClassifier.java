@@ -46,16 +46,7 @@ public class TextClassifier {
 
 	
 	public void transform() {
-			classifier.setFilter(this.instances.getFilterTrain());
-			try {
-				this.instances.setTrainData(Filter.useFilter(
-						this.instances.getTrainData(), 
-						this.instances.getFilterTrain()
-				));
-			} catch (Exception e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
+			classifier.setFilter(this.instances.getFilterTrain());	
 	}
 
 	
@@ -73,16 +64,6 @@ public class TextClassifier {
 	public String evaluate() {
 		System.out.println("Evaluation model...");
 		
-		
-		try {
-			this.instances.setTestData(Filter.useFilter(
-					this.instances.getTestData(), 
-					this.instances.getFilterTest()
-			));
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
 		
 			
 		//evaluation
@@ -138,7 +119,6 @@ public class TextClassifier {
 		final String MODEL = "data/modelWeka2.model";
 
 		TextClassifier wt = new TextClassifier();
-		TextInstances wi = new TextInstances();
 		
 		
 		if (new File(MODEL).exists()) {
