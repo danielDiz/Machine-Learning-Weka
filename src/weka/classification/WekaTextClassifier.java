@@ -36,9 +36,14 @@ public class WekaTextClassifier {
 
 	// declare and initialize file locations
 	private static final String TRAIN_DATA = "data/train/";
-	private static final String TRAIN_DATA_ARFF = "data/trainARFF.arff";
+	private static final String TRAIN_ARFF = "data/trainARFF.arff";
 	private static final String TEST_DATA = "data/test/";
-	private static final String TEST_DATA_ARFF = "data/testARFF.arff";
+	private static final String TEST_ARFF = "data/testARFF.arff";
+	
+	
+	private static final String UNSUP_DATA = "data/unsupervised/";
+	private static final String UNSUP_ARFF = "data/unsup.arff";
+	
 	private static final String STOP_WORD_LIST = "data/stopwords.txt";
 
 	public WekaTextClassifier() {
@@ -65,13 +70,13 @@ public class WekaTextClassifier {
 		try {
 			
 			// load testdata
-			if (new File(TRAIN_DATA_ARFF).exists()) {
-				trainData = loadArff(TRAIN_DATA_ARFF);
+			if (new File(TRAIN_ARFF).exists()) {
+				trainData = loadArff(TRAIN_ARFF);
 			} else {
 				trainData = loadTextDirectory(TRAIN_DATA);
-				saveArff(trainData, TRAIN_DATA_ARFF);
+				saveArff(trainData, TRAIN_ARFF);
 			}
-			System.out.println("done");
+			
 			trainData.setClassIndex(trainData.numAttributes() - 1);
 			filterTrain.setInputFormat(trainData);
 			classifier.setFilter(filterTrain);
@@ -100,7 +105,7 @@ public class WekaTextClassifier {
 			filter.setDoNotOperateOnPerClassBasis(true);
 			filter.setIDFTransform(true);
 			filter.setTFTransform(true);
-			filter.setMinTermFreq(10);
+			filter.setMinTermFreq(100);
 			filter.setLowerCaseTokens(true);
 			filter.setOutputWordCounts(true);
 			
@@ -136,11 +141,11 @@ public class WekaTextClassifier {
 		System.out.println("Evaluation model...");
 		try {
 			// load testdata
-			if (new File(TEST_DATA_ARFF).exists()) {
-				testData = loadArff(TEST_DATA_ARFF);
+			if (new File(UNSUP_ARFF).exists()) {
+				testData = loadArff(UNSUP_ARFF);
 			} else {
-				testData = loadTextDirectory(TEST_DATA);
-				saveArff(testData, TEST_DATA_ARFF);
+				testData = loadTextDirectory(UNSUP_DATA);
+				saveArff(testData, UNSUP_ARFF);
 			}
 			testData.setClassIndex(testData.numAttributes() - 1);
 			filterTest.setInputFormat(testData);
@@ -252,7 +257,7 @@ public class WekaTextClassifier {
 	 * Main method. With an example usage of this class.
 	 */
 	public static void main(String[] args) throws Exception {
-		final String MODEL = "data/modelWeka.model";
+		final String MODEL = "data/modelWeka2.model";
 
 		WekaTextClassifier wt = new WekaTextClassifier();
 		wt.setFilterTrain(wt.filterBuilder());
@@ -272,6 +277,19 @@ public class WekaTextClassifier {
 		// run evaluation
 		System.out.println("Evaluation Result: \n" + wt.evaluate());
 	}
+	
+	/*public void loadData2() {
+		trainData = loadTextDirectory(UNSUP);
+		saveArff(trainData, UNSUP_ARFF);
+		System.out.println("done");
+	}
+	
+	public static void main(String[] args) throws Exception {
+		WekaTextClassifier wt = new WekaTextClassifier();
+		
+		wt.loadData2();
+		
+	}*/
 	
 	
 	
