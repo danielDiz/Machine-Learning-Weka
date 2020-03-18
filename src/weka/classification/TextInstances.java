@@ -10,6 +10,7 @@ import weka.core.converters.ArffSaver;
 import weka.core.converters.TextDirectoryLoader;
 import weka.core.converters.ArffLoader.ArffReader;
 import weka.core.tokenizers.NGramTokenizer;
+import weka.filters.Filter;
 import weka.filters.unsupervised.attribute.StringToWordVector;
 
 public class TextInstances {
@@ -50,7 +51,7 @@ public class TextInstances {
 			saveArff(trainData, TRAIN_ARFF);
 		}
 		
-		this.trainData.setClassIndex(trainData.numAttributes() - 1);
+		//this.trainData.setClassIndex(trainData.numAttributes() - 1);
 		
 		try {
 			this.filterTrain.setInputFormat(trainData);
@@ -61,16 +62,16 @@ public class TextInstances {
 		
 		//Test data
 		if (new File(UNSUP_ARFF).exists()) {
-			testData = loadArff(UNSUP_ARFF);
+			this.testData = loadArff(UNSUP_ARFF);
 		} else {
-			testData = loadTextDirectory(UNSUP_DATA);
+			this.testData = loadTextDirectory(UNSUP_DATA);
 			saveArff(testData, UNSUP_ARFF);
 		}
 		
-		testData.setClassIndex(testData.numAttributes() - 1);
+		//testData.setClassIndex(testData.numAttributes() - 1);
 		
 		try {
-			filterTest.setInputFormat(testData);
+			this.filterTest.setInputFormat(testData);
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -162,6 +163,17 @@ public class TextInstances {
 			e.printStackTrace();
 		}
 		return filter;
+	}
+	
+	//Filter data using the filters
+	public void filterData() {
+		try {
+			trainData = Filter.useFilter(trainData, filterTrain);
+			testData = Filter.useFilter(testData, filterTest);
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 	
 	//Getter and Setters
