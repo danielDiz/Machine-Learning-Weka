@@ -2,6 +2,7 @@ package weka.classification;
 
 import java.io.File;
 
+import weka.classification.TextInstances.ClassificationMode;
 import weka.clusterers.ClusterEvaluation;
 import weka.clusterers.SimpleKMeans;
 
@@ -12,11 +13,16 @@ public class TextClustering {
 	private TextInstances instances;
 	
 	public TextClustering() {
-		this.model = new SimpleKMeans(); 
-		this.model.setPreserveInstancesOrder(true);
-		this.model.setNumClusters(2);
+		try {
+			this.model = new SimpleKMeans(); 
+			this.model.setPreserveInstancesOrder(true);
+			this.model.setNumClusters(2);
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		
-		this.instances = new TextInstances();
+		this.instances = new TextInstances(ClassificationMode.CLUSTER);
 	}
 	
 	

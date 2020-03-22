@@ -6,8 +6,11 @@ import java.io.FileReader;
 import java.io.IOException;
 
 import weka.core.Instances;
+import weka.core.Stopwords;
 import weka.core.converters.ArffSaver;
 import weka.core.converters.TextDirectoryLoader;
+import weka.core.stopwords.Rainbow;
+import weka.core.stopwords.WordsFromFile;
 import weka.core.converters.ArffLoader.ArffReader;
 import weka.core.tokenizers.NGramTokenizer;
 import weka.filters.Filter;
@@ -15,10 +18,16 @@ import weka.filters.unsupervised.attribute.StringToWordVector;
 
 public class TextInstances {
 	
+	private ClassificationMode mode;
+	
+	enum ClassificationMode {
+		CLASSIC,
+		CLUSTER
+	}
+	
 	// declare train and test data Instances
 	private Instances trainData;
 	private Instances testData;
-	
 	
 	// Filter
 	private StringToWordVector filterTrain;
@@ -38,7 +47,8 @@ public class TextInstances {
 	private static final String STOP_WORD_LIST = "data/stopwords.txt";
 	
 	
-	public TextInstances() {
+	public TextInstances(ClassificationMode mode) {
+		this.mode = mode;
 		//Filters
 		this.filterTrain = filterBuilder();
 		this.filterTest = filterBuilder();
@@ -51,7 +61,9 @@ public class TextInstances {
 			saveArff(trainData, TRAIN_ARFF);
 		}
 		
-		//this.trainData.setClassIndex(trainData.numAttributes() - 1);
+		if (mode.equals(ClassificationMode.CLASSIC)) {
+			this.trainData.setClassIndex(trainData.numAttributes() - 1);
+		}
 		
 		try {
 			this.filterTrain.setInputFormat(trainData);
@@ -68,7 +80,10 @@ public class TextInstances {
 			saveArff(testData, UNSUP_ARFF);
 		}
 		
-		//testData.setClassIndex(testData.numAttributes() - 1);
+		
+		if (mode.equals(ClassificationMode.CLASSIC)) {
+			testData.setClassIndex(testData.numAttributes() - 1);
+		}
 		
 		try {
 			this.filterTest.setInputFormat(testData);
@@ -148,17 +163,19 @@ public class TextInstances {
 			filter.setOutputWordCounts(true);
 			
 			//Stopwords
-			
-			//filter.setStopwords(new File("data/stopwords.txt"));
+			if (new File(STOP_WORD_LIST).exists()) {
+				WordsFromFile stopwords = new WordsFromFile();
+				stopwords.setStopwords(new File(STOP_WORD_LIST));
+				
+				filter.setStopwordsHandler(stopwords); //3.6.xx or above (confirmed 3.8.x)
+				//filter.setStopwords(new File("data/stopwords.txt")); //version 3.6.x or lower
+			}
 			
 			//Stemming
 			/*SnowballStemmer stemmer = new SnowballStemmer();
 			stemmer.setStemmer("english");
 			filter.setStemmer(stemmer);*/
 			
-		/*} catch (IOException e) {
-			System.err.println("Problem found when reading: " + STOP_WORD_LIST);
-			*/
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
