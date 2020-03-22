@@ -4,8 +4,8 @@ import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 
-
-import weka.classifiers.evaluation.Evaluation;
+import weka.classification.TextInstances.ClassificationMode;
+import weka.classifiers.Evaluation;
 import weka.classifiers.functions.SMO;
 import weka.classifiers.functions.supportVector.Kernel;
 import weka.classifiers.functions.supportVector.RBFKernel;
@@ -41,7 +41,7 @@ public class TextClassifier {
 		((RBFKernel) kernelValue).setGamma(gamma);
 		this.classifier.setClassifier(smoClassifier);
 		
-		this.instances = new TextInstances();
+		this.instances = new TextInstances(ClassificationMode.CLASSIC);
 	}
 
 	
