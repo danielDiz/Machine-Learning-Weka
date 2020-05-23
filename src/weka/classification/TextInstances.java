@@ -61,10 +61,12 @@ public class TextInstances {
 			saveArff(trainData, TRAIN_ARFF);
 		}
 		
+		// Set number of attributes if classic mode
 		if (mode.equals(ClassificationMode.CLASSIC)) {
 			this.trainData.setClassIndex(trainData.numAttributes() - 1);
 		}
 		
+		//set input format
 		try {
 			this.filterTrain.setInputFormat(trainData);
 		} catch (Exception e) {
@@ -80,19 +82,18 @@ public class TextInstances {
 			saveArff(testData, UNSUP_ARFF);
 		}
 		
-		
+		// Set number of attributes if classic mode
 		if (mode.equals(ClassificationMode.CLASSIC)) {
 			testData.setClassIndex(testData.numAttributes() - 1);
 		}
 		
+		//set input format
 		try {
 			this.filterTest.setInputFormat(testData);
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		
-		
 	}
 	
 	
@@ -152,7 +153,6 @@ public class TextInstances {
 			tokenizer.setNGramMaxSize(2);
 			tokenizer.setDelimiters("\\W");
 			filter.setTokenizer(tokenizer);
-			
 			
 			//Filter options
 			filter.setDoNotOperateOnPerClassBasis(true);

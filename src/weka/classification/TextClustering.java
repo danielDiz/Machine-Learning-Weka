@@ -1,7 +1,5 @@
 package weka.classification;
 
-import java.io.File;
-
 import weka.classification.TextInstances.ClassificationMode;
 import weka.clusterers.ClusterEvaluation;
 import weka.clusterers.SimpleKMeans;
@@ -25,27 +23,19 @@ public class TextClustering {
 		this.instances = new TextInstances(ClassificationMode.CLUSTER);
 	}
 	
-	
-	
-	
-	
 	public static void main(String[] args) throws Exception {
 		final String MODEL = "data/modelWeka3.model";
 
 		TextClustering wt = new TextClustering();
 		wt.instances.filterData();
 		
-		
-		
-		
 		wt.model.buildClusterer(wt.instances.getTrainData());
-		
-		
 		
 		ClusterEvaluation eval = new ClusterEvaluation();
 		eval.setClusterer(wt.model);
 		eval.evaluateClusterer(wt.instances.getTestData());
 	
+		System.out.println(eval.clusterResultsToString());
 		System.out.println("done");
 	}
 }

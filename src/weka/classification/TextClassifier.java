@@ -50,8 +50,6 @@ public class TextClassifier {
 	}
 
 	
-
-	
 	public void fit() {
 		try {
 			classifier.buildClassifier(this.instances.getTrainData());
@@ -63,8 +61,6 @@ public class TextClassifier {
 	
 	public String evaluate() {
 		System.out.println("Evaluation model...");
-		
-		
 			
 		//evaluation
 		try {
@@ -77,8 +73,7 @@ public class TextClassifier {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 			return "Error during evaluation";
-		}
-		
+		}	
 	}
 
 	
