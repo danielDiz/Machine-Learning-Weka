@@ -1,6 +1,0 @@
-@relation C__Users_danie_Downloads_aclImdb_v1_aclImdb_train_unsup
-
-@attribute text string
-@attribute @@class@@ {}
-
-@data
