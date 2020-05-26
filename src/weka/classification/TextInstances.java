@@ -5,15 +5,19 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 
+import weka.classifiers.trees.j48.Stats;
+import weka.core.AttributeStats;
 import weka.core.Instances;
 import weka.core.Stopwords;
 import weka.core.converters.ArffSaver;
+import weka.core.converters.CSVLoader;
 import weka.core.converters.TextDirectoryLoader;
 import weka.core.stopwords.Rainbow;
 import weka.core.stopwords.WordsFromFile;
 import weka.core.converters.ArffLoader.ArffReader;
 import weka.core.tokenizers.NGramTokenizer;
 import weka.filters.Filter;
+import weka.filters.unsupervised.attribute.StringToNominal;
 import weka.filters.unsupervised.attribute.StringToWordVector;
 
 public class TextInstances {
@@ -30,16 +34,15 @@ public class TextInstances {
 	private Instances testData;
 	
 	// Filter
-	private StringToWordVector filterTrain;
+	private Filter filterTrain;
 	
-	private StringToWordVector filterTest;
+	private Filter filterTest;
 	
 	// declare and initialize file locations
 	private static final String TRAIN_DATA = "data/train/";
 	private static final String TRAIN_ARFF = "data/trainARFF.arff";
 	private static final String TEST_DATA = "data/test/";
 	private static final String TEST_ARFF = "data/testARFF.arff";
-		
 		
 	private static final String UNSUP_DATA = "data/unsupervised/";
 	private static final String UNSUP_ARFF = "data/unsup.arff";
@@ -50,8 +53,8 @@ public class TextInstances {
 	public TextInstances(ClassificationMode mode) {
 		this.mode = mode;
 		//Filters
-		this.filterTrain = filterBuilder();
-		this.filterTest = filterBuilder();
+		this.filterTrain = filterBuilderWordVector();
+		this.filterTest = filterBuilderWordVector();
 		
 		//Train data
 		if (new File(TRAIN_ARFF).exists()) {
@@ -75,11 +78,11 @@ public class TextInstances {
 		}
 		
 		//Test data
-		if (new File(UNSUP_ARFF).exists()) {
-			this.testData = loadArff(UNSUP_ARFF);
+		if (new File(TEST_ARFF).exists()) {
+			this.testData = loadArff(TEST_ARFF);
 		} else {
-			this.testData = loadTextDirectory(UNSUP_DATA);
-			saveArff(testData, UNSUP_ARFF);
+			this.testData = loadTextDirectory(TEST_DATA);
+			saveArff(testData, TEST_ARFF);
 		}
 		
 		// Set number of attributes if classic mode
@@ -94,6 +97,20 @@ public class TextInstances {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+		
+		try {
+			this.trainData = Filter.useFilter(this.trainData, this.filterTrain);
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		try {
+			this.testData = Filter.useFilter(this.testData, this.filterTest);
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 	
 	
@@ -103,6 +120,21 @@ public class TextInstances {
 		try {
 			TextDirectoryLoader loader = new TextDirectoryLoader();
 			loader.setDirectory(new File(fileName));
+			Instances rawData = loader.getDataSet();
+			
+			return rawData;
+		} catch (IOException e) {
+			e.printStackTrace();
+			return null;
+		}
+	}
+	
+	//Loads a csv file as an Instance object
+	private Instances loadCSV(String fileName) {
+		System.out.println("Loading from: " + fileName);
+		try {
+			CSVLoader loader = new CSVLoader();
+			loader.setSource(new File(fileName));
 			Instances rawData = loader.getDataSet();
 			
 			return rawData;
@@ -143,7 +175,7 @@ public class TextInstances {
 	}
 	
 	//Builds a StringToWordVector
-	private StringToWordVector filterBuilder() {
+	private StringToWordVector filterBuilderWordVector() {
 		// Filter initialization
 		StringToWordVector filter = new StringToWordVector(400);
 		try {
@@ -182,6 +214,15 @@ public class TextInstances {
 		return filter;
 	}
 	
+	//Builds a StringToWordVector
+		private StringToNominal filterBuilderNominal() {
+			// Filter initialization
+			StringToNominal filter = new StringToNominal();
+			filter.setAttributeRange("first");
+			
+			return filter;
+		}
+	
 	//Filter data using the filters
 	public void filterData() {
 		try {
@@ -215,22 +256,22 @@ public class TextInstances {
 	}
 	
 	
-	public StringToWordVector getFilterTrain() {
+	public Filter getFilterTrain() {
 		return filterTrain;
 	}
 
 
-	public void setFilterTrain(StringToWordVector filterTrain) {
+	public void setFilterTrain(Filter filterTrain) {
 		this.filterTrain = filterTrain;
 	}
 
 
-	public StringToWordVector getFilterTest() {
+	public Filter getFilterTest() {
 		return filterTest;
 	}
 
 
-	public void setFilterTest(StringToWordVector filterTest) {
+	public void setFilterTest(Filter filterTest) {
 		this.filterTest = filterTest;
 	}
 
