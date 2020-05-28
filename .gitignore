@@ -1,4 +1,4 @@
 .class
 .settings
 /target/
-.txt
+*.txt
