@@ -1,5 +1,7 @@
 package weka.classification;
 
+import java.util.Random;
+
 import weka.classification.TextInstances.ClassificationMode;
 import weka.clusterers.ClusterEvaluation;
 import weka.clusterers.SimpleKMeans;
@@ -34,7 +36,7 @@ public class TextClustering {
 		ClusterEvaluation eval = new ClusterEvaluation();
 		eval.setClusterer(wt.model);
 		eval.evaluateClusterer(wt.instances.getTestData());
-	
+		
 		System.out.println(eval.clusterResultsToString());
 		System.out.println("done");
 	}

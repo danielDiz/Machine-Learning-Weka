@@ -8,6 +8,7 @@ import weka.classification.TextInstances.ClassificationMode;
 import weka.classifiers.Classifier;
 import weka.classifiers.Evaluation;
 import weka.classifiers.bayes.NaiveBayes;
+import weka.classifiers.functions.LibSVM;
 import weka.classifiers.functions.SMO;
 import weka.classifiers.functions.supportVector.Kernel;
 import weka.classifiers.functions.supportVector.RBFKernel;
@@ -52,15 +53,12 @@ public class TextClassifier {
 		double gamma = Math.pow(2,  gammaValue);
 		
 		
-		
-		
 		//Clasification Model
 		this.classifier = new FilteredClassifier();
-		SMO smoClassifier = new SMO();
-		smoClassifier.setKernel(kernelValue);
-		smoClassifier.setC(c);
-		((RBFKernel) kernelValue).setGamma(gamma);
-		this.classifier.setClassifier(smoClassifier);
+		LibSVM svm = new LibSVM();
+		//NaiveBayes svm = new NaiveBayes();
+		svm.setProbabilityEstimates(true);
+		this.classifier.setClassifier(svm);
 		
 		this.instances = new TextInstances(ClassificationMode.CLASSIC);
 		
@@ -72,17 +70,20 @@ public class TextClassifier {
 
 	
 	public void transform() {
-			classifier.setFilter(instances.getFilterTrain());	
+			classifier.setFilter(instances.getFilterTrain());
+			
 	}
 
 	
 	public void fit() {
-//		try {
-//			classifier.buildClassifier(this.instances.getTrainData());
-//		} catch (Exception e) {
-//			e.printStackTrace();
-//		}
 		
+		
+		long startTime = System.currentTimeMillis();
+		try {
+			classifier.buildClassifier(this.instances.getTrainData());
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 		/* Boosting a weak classifier using the Adaboost M1 method
 		 * for boosting a nominal class classifier
 		 * Tackles only nominal class problems
@@ -90,17 +91,17 @@ public class TextClassifier {
 		 * Sometimes overfits.
 		 */
 		//AdaBoost
-		System.out.println("Boosting");
-		m1.setClassifier(classifier);
-		m1.setNumIterations(20);
-		try {
-			m1.buildClassifier(instances.getTrainData());
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		
-		
+//		System.out.println("Boosting");
+//		m1.setClassifier(classifier);
+//		m1.setNumIterations(10);
+//		try {
+//			m1.buildClassifier(instances.getTrainData());
+//		} catch (Exception e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//		}
+//		
+//		
 		
 		/* Bagging a classifier to reduce variance.
 		 * Can do classification and regression (depending on the base model)
@@ -128,7 +129,9 @@ public class TextClassifier {
 		Classifier[] classifiers = {				
 				new J48(),
 				new NaiveBayes(),
-				new RandomForest()
+				new LibSVM(),
+				new RandomTree(),
+				new AdaBoostM1()
 		};
 		
 		stacker.setClassifiers(classifiers);//needs one or more models
@@ -153,6 +156,9 @@ public class TextClassifier {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+		
+		long endTime = System.currentTimeMillis();
+		System.out.println(endTime - startTime);
 	}
 
 	
