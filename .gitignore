@@ -1,7 +1,4 @@
 .class
 .settings
 /target/
-/data/datasets/
-/data/train/
-/data/test/
-/data/unsupervised/
+.txt
