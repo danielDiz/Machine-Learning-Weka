@@ -14,6 +14,11 @@
 		</dependency>
 		<dependency>
 			<groupId>nz.ac.waikato.cms.weka</groupId>
+			<artifactId>XMeans</artifactId>
+			<version>1.0.4</version>
+		</dependency>
+		<dependency>
+			<groupId>nz.ac.waikato.cms.weka</groupId>
 			<artifactId>LibSVM</artifactId>
 			<version>1.0.10</version>
 		</dependency>

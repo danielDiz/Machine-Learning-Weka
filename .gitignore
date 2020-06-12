@@ -2,5 +2,7 @@
 .settings
 /target/
 *.txt
-*.log
 *.xml
+*.log
+data/train/
+!data/train/logs_pure.rar
