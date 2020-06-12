@@ -39,17 +39,17 @@ public class FileReorderer {
 
 	private static final String ORIGINAL_DATA = "data/train/";
 	private static final String UPDATED_DATA = "data/trainUpdated/";
-	
+
 	private static final String CATEGORIES_DATA = "data/trainCategories/";
 	private static final String LOG_CATEGORIZED_DATA = "data/trainCategorized/";
-	
+
 	// Xml log-failure-reasons fields
 	private static final String XML_EXAMPLE = "Example";
 	private static final String XML_LOG = "Log";
 	private static final String XML_KEYWORDS = "Keywords";
 	private static final String XML_CATEGORY = "Category";
 	private static final String XML_CHUNK = "Chunk";
-	
+
 	// Travis license
 	private static final String TRAVIS_LICENSE = "";
 
@@ -59,22 +59,24 @@ public class FileReorderer {
 		File updatedDirectory = new File(UPDATED_DATA);
 		updatedDirectory.mkdir();
 		Map<String, File> files = new HashMap<>();
-			
+
 		for (final File subdirectory : directory.listFiles()) {
-			//File updatedSubdirectory = new File(UPDATED_DATA + subdirectory.getName());
-			//updatedSubdirectory.mkdir();
+			// File updatedSubdirectory = new File(UPDATED_DATA + subdirectory.getName());
+			// updatedSubdirectory.mkdir();
 			for (final File log : subdirectory.listFiles()) {
-				//File updatedLog = new File(updatedSubdirectory.toPath() + "/" + log.getName());
-				//File updatedLog = new File(UPDATED_DATA + log.getName());
+				// File updatedLog = new File(updatedSubdirectory.toPath() + "/" +
+				// log.getName());
+				// File updatedLog = new File(UPDATED_DATA + log.getName());
 				// modify each file to delete certain characters
-				
-				//Files.copy(log.toPath(), updatedLog.toPath(), StandardCopyOption.REPLACE_EXISTING);
-				//updatedLog.createNewFile();
-				//modifyFile(updatedLog);
+
+				// Files.copy(log.toPath(), updatedLog.toPath(),
+				// StandardCopyOption.REPLACE_EXISTING);
+				// updatedLog.createNewFile();
+				// modifyFile(updatedLog);
 				files.put(log.getName(), log);
 			}
 		}
-		
+
 		File directoryCategories = new File(CATEGORIES_DATA);
 		Map<Integer, List<XmlInstance>> categories = new HashMap<>();
 		DocumentBuilder documentBuilder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
@@ -82,8 +84,9 @@ public class FileReorderer {
 			for (final File xml : subdirectory.listFiles()) {
 				Document doc = documentBuilder.parse(xml);
 				int n = doc.getElementsByTagName(XML_EXAMPLE).getLength();
-				for(int i = 0; i < n; i++) {
-					String log = doc.getElementsByTagName(XML_LOG).item(i).getTextContent().split("/")[3]; //Get only file name
+				for (int i = 0; i < n; i++) {
+					String log = doc.getElementsByTagName(XML_LOG).item(i).getTextContent().split("/")[3]; // Get only
+																											// file name
 					String keywords = doc.getElementsByTagName(XML_KEYWORDS).item(i).getTextContent();
 					int category;
 					try {
@@ -91,33 +94,33 @@ public class FileReorderer {
 					} catch (NumberFormatException e) {
 						category = -1;
 					}
-						String chunk = doc.getElementsByTagName(XML_CHUNK).item(i).getTextContent();
-					
-					//System.out.println(log + " " + keywords);
+					String chunk = doc.getElementsByTagName(XML_CHUNK).item(i).getTextContent();
+
+					// System.out.println(log + " " + keywords);
 					XmlInstance example = new XmlInstance(log, keywords, category, chunk);
-					
-					if(!categories.containsKey(category)) {
+
+					if (!categories.containsKey(category)) {
 						categories.put(category, new ArrayList<XmlInstance>());
-					} 
+					}
 					categories.get(category).add(example);
 				}
 			}
 		}
-		
+
 		for (List<XmlInstance> logReports : categories.values()) {
 			int category = logReports.get(0).getCategory();
 			File logsByCategories = new File(LOG_CATEGORIZED_DATA + category);
 			logsByCategories.mkdir();
-			//System.out.println(categoryName);
-			//System.out.println("Category: " + logReports.get(0).getCategory());
+			// System.out.println(categoryName);
+			// System.out.println("Category: " + logReports.get(0).getCategory());
 			for (XmlInstance xmlLog : logReports) {
-				//System.out.println(xmlLog.getKeywords());
+				// System.out.println(xmlLog.getKeywords());
 				File log = files.get(xmlLog.getLog());
 				File copyLog = new File(LOG_CATEGORIZED_DATA + category + "/" + log.getName());
-				
+
 				Files.copy(log.toPath(), copyLog.toPath(), StandardCopyOption.REPLACE_EXISTING);
 				copyLog.createNewFile();
-				//System.out.println(log.getAbsolutePath());
+				// System.out.println(log.getAbsolutePath());
 			}
 			System.out.println();
 			System.out.println();
@@ -125,125 +128,18 @@ public class FileReorderer {
 			System.out.println();
 			System.out.println();
 		}
-		
-		
-		
-		
-		
-		
-		
-		
-		
+
 		System.out.println("Done");
 		System.exit(0);
 	}
 
 	private static void modifyFile(File log) {
 		// TODO Auto-generated method stub
-		
-		
-		
+
 	}
-	
-	
-	
-	
-	
-		
+
 }
-		
-		
-		
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-		
 //		
 //		Instances ins;
 //		// MultiFilter filter = filterBuilderMulti();
@@ -318,4 +214,3 @@ public class FileReorderer {
 //
 //		return filter;
 //	}
-
