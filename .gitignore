@@ -4,5 +4,4 @@
 *.txt
 *.xml
 *.log
-data/train/
-!data/train/logs_pure.rar
+/data/train/**
