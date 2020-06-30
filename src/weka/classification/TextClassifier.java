@@ -11,24 +11,18 @@ import weka.classification.TextInstances.ClassificationMode;
 import weka.classifiers.Classifier;
 import weka.classifiers.Evaluation;
 import weka.classifiers.bayes.NaiveBayes;
-import weka.classifiers.functions.GaussianProcesses;
 import weka.classifiers.functions.LibSVM;
 import weka.classifiers.lazy.IBk;
-import weka.classifiers.lazy.KStar;
 import weka.classifiers.meta.AdaBoostM1;
 import weka.classifiers.meta.Bagging;
-import weka.classifiers.meta.FilteredClassifier;
 import weka.classifiers.meta.Stacking;
 import weka.classifiers.meta.Vote;
 import weka.classifiers.misc.InputMappedClassifier;
 import weka.classifiers.trees.J48;
 import weka.classifiers.trees.RandomTree;
-import weka.core.Instance;
 import weka.core.SelectedTag;
 import weka.core.Tag;
-import weka.core.Utils;
 import weka.core.neighboursearch.LinearNNSearch;
-import weka.core.neighboursearch.NearestNeighbourSearch;
 
 public class TextClassifier {
 
@@ -63,15 +57,6 @@ public class TextClassifier {
 		classifier.setNearestNeighbourSearchAlgorithm(new LinearNNSearch());
 
 		this.instances = new TextInstances(ClassificationMode.CLASSIC);
-
-//		for (int j = 0; j < this.instances.getTrainData().numInstances(); j++) {
-//			System.out.println("next instance");
-//			for (int i = 0; i < this.instances.getTrainData().numAttributes(); i++) {
-//				System.out.println(this.instances.getTrainData().get(j).attribute(i));
-//			}
-//		}
-
-		
 
 		this.m1 = new AdaBoostM1();
 		this.bagger = new Bagging();
@@ -114,7 +99,6 @@ public class TextClassifier {
 		try {
 			m1.buildClassifier(instances.getTrainData());
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
@@ -165,7 +149,6 @@ public class TextClassifier {
 		try {
 			voter.buildClassifier(instances.getTrainData());
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
@@ -182,18 +165,9 @@ public class TextClassifier {
 
 			Evaluation eval = new Evaluation(instances.getTrainData());
 			eval.evaluateModel(mappedCls, instances.getTestData());
-			// eval.crossValidateModel(voter, instances.getTrainData(), 10, new
-			// Random(254));
-
-			// Results
-//			for(int i = 0; i < instances.getTestData().numInstances(); i++) {
-//				double result = eval.evaluateModelOnce(mappedCls, instances.getTestData().get(i));
-//				System.out.println(result);
-//			}
 
 			return (eval.toSummaryString() + "\n" + eval.toClassDetailsString());
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 			return "Error during evaluation";
 
@@ -239,7 +213,7 @@ public class TextClassifier {
 			wt.classify();
 		} else {
 			wt.classify();
-			// wt.saveModel(MODEL);
+			wt.saveModel(MODEL);
 		}
 
 		// run evaluation
