@@ -1,7 +1,5 @@
 package weka.classification;
 
-import java.util.List;
-
 public class XmlInstance {
 	private String log;
 	private String keywords;

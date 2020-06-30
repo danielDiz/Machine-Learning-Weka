@@ -13,6 +13,16 @@
 			<version>3.8.4</version>
 		</dependency>
 		<dependency>
+			<groupId>weka-packages</groupId>
+			<artifactId>MultiObjectiveEvolutionarySearch</artifactId>
+			<version>1.0.0</version>
+		</dependency>
+		<!-- <dependency>
+			<groupId>weka-packages</groupId>
+			<artifactId>AutoWEKA</artifactId>
+			<version>1.0.0</version>
+		</dependency>-->
+		<dependency>
 			<groupId>nz.ac.waikato.cms.weka</groupId>
 			<artifactId>XMeans</artifactId>
 			<version>1.0.4</version>
@@ -46,4 +56,10 @@
 			</plugin>
 		</plugins>
 	</build>
+	<repositories>
+		<repository>
+			<id>local-repository</id>
+			<url>file://${basedir}/repo</url>
+		</repository>
+	</repositories>
 </project>

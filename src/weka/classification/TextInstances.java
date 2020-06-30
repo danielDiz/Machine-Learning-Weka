@@ -4,22 +4,31 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.Random;
 
-import weka.classifiers.trees.j48.Stats;
-import weka.core.AttributeStats;
-import weka.core.DenseInstance;
+import weka.attributeSelection.ASEvaluation;
+import weka.attributeSelection.ASSearch;
+import weka.attributeSelection.BestFirst;
+import weka.attributeSelection.CfsSubsetEval;
+import weka.attributeSelection.GreedyStepwise;
+import weka.attributeSelection.InfoGainAttributeEval;
+import weka.attributeSelection.MultiObjectiveEvolutionarySearch;
+import weka.attributeSelection.OneRAttributeEval;
+import weka.attributeSelection.Ranker;
+import weka.attributeSelection.ReliefFAttributeEval;
 import weka.core.Instances;
-import weka.core.Stopwords;
+import weka.core.OptionHandler;
+import weka.core.Utils;
+import weka.core.converters.ArffLoader.ArffReader;
 import weka.core.converters.ArffSaver;
 import weka.core.converters.CSVLoader;
 import weka.core.converters.TextDirectoryLoader;
-import weka.core.stopwords.Rainbow;
 import weka.core.stopwords.WordsFromFile;
-import weka.core.converters.ArffLoader.ArffReader;
 import weka.core.tokenizers.NGramTokenizer;
-import weka.core.tokenizers.WordTokenizer;
 import weka.filters.Filter;
-import weka.filters.supervised.instance.Resample;
+import weka.filters.supervised.attribute.AttributeSelection;
+import weka.filters.unsupervised.attribute.NumericToBinary;
+import weka.filters.unsupervised.attribute.NumericToNominal;
 import weka.filters.unsupervised.attribute.RemoveByName;
 import weka.filters.unsupervised.attribute.StringToNominal;
 import weka.filters.unsupervised.attribute.StringToWordVector;
@@ -44,92 +53,273 @@ public class TextInstances {
 
 	private static final String STOP_WORD_LIST = "data/stopwords.txt";
 
-	private final int NUM_OF_WORDS = 250;
+	private final int NUM_OF_WORDS = 1000; // 1350 -> 71%
 
 	public TextInstances(ClassificationMode mode) {
 		this.mode = mode;
-		// StringToWordVector filters
-		StringToWordVector filterTrain = filterBuilderWordVector(NUM_OF_WORDS);
-		StringToWordVector filterTest = filterBuilderWordVector(NUM_OF_WORDS);
 
 		// Load data
 		Instances rawData;
+
 		if (new File(TRAIN_ARFF).exists() && new File(TEST_ARFF).exists()) {
 			this.trainData = loadArff(TRAIN_ARFF);
 			this.testData = loadArff(TEST_ARFF);
-		} else {
-			rawData = loadTextDirectory(TRAIN_DATA);
+			
+			// Set number of attributes if classic mode
+			if (mode.equals(ClassificationMode.CLASSIC)) {
+				this.trainData.setClassIndex(trainData.numAttributes() - 1);
 
-			// Split data
-			try {
-				int percentage = 30; // 70% train - 30% test
-				RemovePercentage dataSplitterTrain = new RemovePercentage();
-				dataSplitterTrain.setPercentage(percentage);
-				dataSplitterTrain.setInputFormat(rawData);
-				this.trainData = Filter.useFilter(rawData, dataSplitterTrain);
-
-				RemovePercentage dataSplitterTest = new RemovePercentage();
-				dataSplitterTest.setPercentage(percentage);
-				dataSplitterTest.setInputFormat(rawData);
-				dataSplitterTest.setInvertSelection(true);
-				this.testData = Filter.useFilter(rawData, dataSplitterTest);
-			} catch (Exception e) {
-				e.printStackTrace();
+				this.testData.setClassIndex(testData.numAttributes() - 1);
 			}
 
-			// Save in arff files
-			saveArff(trainData, TRAIN_ARFF);
-			saveArff(testData, TEST_ARFF);
-		}
-		// System.out.println(trainData.numInstances());
-		// System.out.println(testData.numInstances());
+		} else {
+			
 
+			
+			
+
+			// Save in arff files
+			//saveArff(trainData, TRAIN_ARFF);
+			//saveArff(testData, TEST_ARFF);
+		}
+		
+		rawData = loadTextDirectory(TRAIN_DATA);
+
+		// rawData.randomize(new Random(System.currentTimeMillis()));
+
+		// Split data
+		double percentage = 30; // 70% train - 30% test
+//		
+//		int trainingSize = (int) (rawData.numInstances() * (percentage / 100.0));
+//		int testingSize = rawData.numInstances() - trainingSize;
+//		
+//		Instances trainData = new Instances(rawData, 0, trainingSize);
+//		Instances testData = new Instances(rawData, trainingSize, testingSize);
+
+		
 		// Set number of attributes if classic mode
 		if (mode.equals(ClassificationMode.CLASSIC)) {
-			this.trainData.setClassIndex(trainData.numAttributes() - 1);
+			rawData.setClassIndex(rawData.numAttributes() - 1);
 
-			this.testData.setClassIndex(testData.numAttributes() - 1);
 		}
+		
 
-		// Set input format
+		// StringToWordVector filtering
+		rawData = filterStringToWordVector(rawData);
+
+		//saveArff(rawData, "data/raw2.arff");
+		
+		// RemoveByNam2 filtering
+		//this.trainData = filterRemoveByName(this.trainData);
+		//this.testData = filterRemoveByName(this.testData);
+		rawData = filterRemoveByName(rawData);
+
+		//saveArff(rawData, "data/raw3.arff");
+		
+		// AtributeSelection filtering
+		//rawData = filterAttributeSelection1(rawData);
+		rawData = filterAttributeSelection2(rawData);
+
+		//saveArff(rawData, "data/raw4.arff");
+		
 		try {
-			filterTrain.setInputFormat(trainData);
-			filterTest.setInputFormat(testData);
+
+			RemovePercentage dataSplitterTrain = new RemovePercentage();
+			dataSplitterTrain.setPercentage(percentage);
+			dataSplitterTrain.setInputFormat(rawData);
+			this.trainData = Filter.useFilter(rawData, dataSplitterTrain);
+
+			RemovePercentage dataSplitterTest = new RemovePercentage();
+			dataSplitterTest.setPercentage(percentage);
+			dataSplitterTest.setInputFormat(rawData);
+			dataSplitterTest.setInvertSelection(true);
+			this.testData = Filter.useFilter(rawData, dataSplitterTest);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		
+		//saveArff(trainData, "data/train4.arff");
+		//saveArff(testData, "data/test4.arff");
+
+		System.out.println("done with instances");
+
+	}
+
+	private Instances filterStringToWordVector(Instances ins) {
+		// Filter initialization
+		StringToWordVector filter = new StringToWordVector(NUM_OF_WORDS);
+		try {
+			// Tokenization
+			NGramTokenizer tokenizer = new NGramTokenizer();
+			tokenizer.setNGramMinSize(1);
+			tokenizer.setNGramMaxSize(6);
+			tokenizer.setDelimiters("\\r\\t.,;:'\"()?!\\{\\}\\[\\]");
+
+			filter.setTokenizer(tokenizer);
+
+			// Filter options
+			filter.setDoNotOperateOnPerClassBasis(true);
+			filter.setIDFTransform(true);
+			filter.setTFTransform(true);
+
+			filter.setMinTermFreq(1);
+			filter.setOutputWordCounts(true);
+
+			// Stopwords
+			if (new File(STOP_WORD_LIST).exists()) {
+				WordsFromFile stopwords = new WordsFromFile();
+				stopwords.setStopwords(new File(STOP_WORD_LIST));
+
+				// filter.setStopwordsHandler(stopwords); // 3.6.xx or above (confirmed 3.8.x)
+				// filter.setStopwords(new File("data/stopwords.txt")); //version 3.6.x or lower
+			}
+
+			// Stemming
+			/*
+			 * SnowballStemmer stemmer = new SnowballStemmer();
+			 * stemmer.setStemmer("english"); filter.setStemmer(stemmer);
+			 */
+
+			filter.setInputFormat(ins);
+
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
 
-		// Filter data
 		try {
-			this.trainData = Filter.useFilter(this.trainData, filterTrain);
-			this.testData = Filter.useFilter(this.testData, filterTest);
+			return Filter.useFilter(ins, filter);
 		} catch (Exception e) {
 			e.printStackTrace();
+			return ins;
 		}
 
-		// RemoveByName filtering
-		RemoveByName filterTrainUTF8 = filterBuilderRemoveByName();
-		RemoveByName filterTestUTF8 = filterBuilderRemoveByName();
+	}
+
+	// RemoveByName filtering
+	private Instances filterRemoveByName(Instances ins) {
+		RemoveByName filter = new RemoveByName();
+		filter.setExpression("\\p{L}+"); // only utf-8 chars //TODO: add @ # etc
+		filter.setInvertSelection(true);
 
 		try {
-			filterTrainUTF8.setInputFormat(trainData);
-			filterTestUTF8.setInputFormat(testData);
+			filter.setInputFormat(ins);
 		} catch (Exception e1) {
 			// TODO Auto-generated catch block
 			e1.printStackTrace();
 		}
 
-		// Filter data
 		try {
-			// this.trainData = Filter.useFilter(this.trainData, filterTrainUTF8);
-			// this.testData = Filter.useFilter(this.testData, filterTestUTF8);
+			return Filter.useFilter(ins, filter);
 		} catch (Exception e) {
 			e.printStackTrace();
+			return ins;
+		}
+	}
+
+	// Builds a StringToWordVector
+	private Instances filterNumericToNominal(Instances ins) {
+		NumericToNominal filter = new NumericToNominal();
+
+		try {
+			filter.setInputFormat(ins);
+		} catch (Exception e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
 		}
 
-		// System.out.println(this.trainData.numAttributes());
-		// System.out.println(this.testData.numAttributes());
+		try {
+			return Filter.useFilter(ins, filter);
+		} catch (Exception e) {
+			e.printStackTrace();
+			return ins;
+		}
+	}
 
+	private Instances filterAttributeSelection1(Instances ins) {
+		AttributeSelection filter = new AttributeSelection();
+		
+		OneRAttributeEval eval = new OneRAttributeEval();
+		try {
+			eval.setOptions(Utils.splitOptions("-S 0 -F 13 -B 18"));
+		} catch (Exception e2) {
+			// TODO Auto-generated catch block
+			e2.printStackTrace();
+		}
+		
+		Ranker search = new Ranker();
+		try {
+			search.setOptions(Utils.splitOptions("-T 4.194539409525584"));
+		} catch (Exception e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
+
+		filter.setEvaluator(eval);
+		filter.setSearch(search);
+		try {
+			filter.setInputFormat(ins);
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+
+		try {
+			return Filter.useFilter(ins, filter);
+		} catch (Exception e) {
+			e.printStackTrace();
+			return ins;
+		}
+	}
+	
+	private Instances filterAttributeSelection2(Instances ins) {
+		AttributeSelection filter = new AttributeSelection();
+		
+
+		CfsSubsetEval eval = new CfsSubsetEval();
+		String[] options = { "CfsSubsetEval.class", "CFS_SUBSET_EVAL_CONFIG", "MultiObjectiveEvolutionarySearch.class",
+				"-generations 10 -population-size 100 -seed 1 -a 0" };
+		try {
+			((OptionHandler) eval).setOptions(Utils.splitOptions("CFS_SUBSET_EVAL_CONFIG"));
+		} catch (Exception e2) {
+			// TODO Auto-generated catch block
+			e2.printStackTrace();
+		}
+
+		BestFirst search = new BestFirst();
+
+		try {
+			search.setOptions(Utils.splitOptions("-D 1 -N 5 -S 0"));
+		} catch (Exception e2) {
+			// TODO Auto-generated catch block
+			e2.printStackTrace();
+		}
+
+//		MultiObjectiveEvolutionarySearch search = new MultiObjectiveEvolutionarySearch();
+//		try {
+//			((OptionHandler) search)
+//					.setOptions(Utils.splitOptions("-generations 10 -population-size 100 -seed 1 -a 0"));
+//		} catch (Exception e1) {
+//			// TODO Auto-generated catch block
+//			e1.printStackTrace();
+//		}
+
+		filter.setEvaluator(eval);
+		filter.setSearch(search);
+		try {
+			filter.setInputFormat(ins);
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+
+		try {
+			return Filter.useFilter(ins, filter);
+		} catch (Exception e) {
+			e.printStackTrace();
+			return ins;
+		}
 	}
 
 	// Loads a text directory as an Instance object
@@ -164,7 +354,6 @@ public class TextInstances {
 	}
 
 	// Loads an ARFF file as an Instance object
-
 	public static Instances loadArff(String fileName) {
 		System.out.println("Loading file: " + fileName);
 		try {
@@ -192,65 +381,6 @@ public class TextInstances {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-	}
-
-	// Builds a StringToWordVector filter
-	private StringToWordVector filterBuilderWordVector(int numOfWords) {
-		// Filter initialization
-		StringToWordVector filter = new StringToWordVector(numOfWords);
-		try {
-			// Tokenization
-			NGramTokenizer tokenizer = new NGramTokenizer();
-			tokenizer.setNGramMinSize(1);
-			tokenizer.setNGramMaxSize(5);
-			tokenizer.setDelimiters("\\r\\t.,;:'\"()?!\\{\\}\\[\\]");
-
-			filter.setTokenizer(tokenizer);
-
-			// Filter options
-			filter.setDoNotOperateOnPerClassBasis(true);
-			filter.setIDFTransform(true);
-			filter.setTFTransform(true);
-
-			filter.setMinTermFreq(1);
-			filter.setOutputWordCounts(true);
-
-			// Stopwords
-			if (new File(STOP_WORD_LIST).exists()) {
-				WordsFromFile stopwords = new WordsFromFile();
-				stopwords.setStopwords(new File(STOP_WORD_LIST));
-
-				// filter.setStopwordsHandler(stopwords); // 3.6.xx or above (confirmed 3.8.x)
-				// filter.setStopwords(new File("data/stopwords.txt")); //version 3.6.x or lower
-			}
-
-			// Stemming
-			/*
-			 * SnowballStemmer stemmer = new SnowballStemmer();
-			 * stemmer.setStemmer("english"); filter.setStemmer(stemmer);
-			 */
-
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-		return filter;
-	}
-
-	// Buil a RemoveByName filter
-	private RemoveByName filterBuilderRemoveByName() {
-		RemoveByName filter = new RemoveByName();
-		filter.setExpression("\\p{L}+"); // only utf-8 chars //TODO: add @ # etc
-		filter.setInvertSelection(false);
-
-		return filter;
-	}
-
-	// Builds a StringToWordVector
-	private StringToNominal filterBuilderNominal() {
-		StringToNominal filter = new StringToNominal();
-		filter.setAttributeRange("first");
-
-		return filter;
 	}
 
 	// Getter and Setters
