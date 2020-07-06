@@ -18,9 +18,9 @@
 			<version>2.6.1</version>
 		</dependency>
 		<dependency>
-			<groupId>nz.ac.waikato.cms.weka</groupId>
-			<artifactId>XMeans</artifactId>
-			<version>1.0.4</version>
+			<groupId>org.json</groupId>
+			<artifactId>json</artifactId>
+			<version>20200518</version>
 		</dependency>
 		<dependency>
 			<groupId>nz.ac.waikato.cms.weka</groupId>
