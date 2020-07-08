@@ -100,6 +100,7 @@ public class FileReorderer {
 				logs.add(log);
 			}
 		}
+	}
 
 		ZipFile zip = new ZipFile("data/train_splitted" + "/train.zip");
 		try {
@@ -129,7 +130,10 @@ public class FileReorderer {
 				if (isFileType(log, "txt")) {
 					files.put(log.getName(), log);
 				}
+
 			}
+		} catch (Exception e) {
+			e.printStackTrace();
 		}
 	}
 
