@@ -13,19 +13,14 @@
 			<version>3.8.4</version>
 		</dependency>
 		<dependency>
-			<groupId>weka-packages</groupId>
-			<artifactId>MultiObjectiveEvolutionarySearch</artifactId>
-			<version>1.0.0</version>
+			<groupId>net.lingala.zip4j</groupId>
+			<artifactId>zip4j</artifactId>
+			<version>2.6.1</version>
 		</dependency>
-		<!-- <dependency>
-			<groupId>weka-packages</groupId>
-			<artifactId>AutoWEKA</artifactId>
-			<version>1.0.0</version>
-		</dependency>-->
 		<dependency>
-			<groupId>nz.ac.waikato.cms.weka</groupId>
-			<artifactId>XMeans</artifactId>
-			<version>1.0.4</version>
+			<groupId>org.json</groupId>
+			<artifactId>json</artifactId>
+			<version>20200518</version>
 		</dependency>
 		<dependency>
 			<groupId>nz.ac.waikato.cms.weka</groupId>

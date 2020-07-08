@@ -1,34 +1,22 @@
 package weka.classification;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 
 import weka.classification.TextInstances.ClassificationMode;
 import weka.classifiers.Classifier;
 import weka.classifiers.Evaluation;
 import weka.classifiers.bayes.NaiveBayes;
-import weka.classifiers.functions.GaussianProcesses;
 import weka.classifiers.functions.LibSVM;
 import weka.classifiers.lazy.IBk;
-import weka.classifiers.lazy.KStar;
 import weka.classifiers.meta.AdaBoostM1;
 import weka.classifiers.meta.Bagging;
-import weka.classifiers.meta.FilteredClassifier;
 import weka.classifiers.meta.Stacking;
 import weka.classifiers.meta.Vote;
-import weka.classifiers.misc.InputMappedClassifier;
 import weka.classifiers.trees.J48;
 import weka.classifiers.trees.RandomTree;
-import weka.core.Instance;
 import weka.core.SelectedTag;
 import weka.core.Tag;
-import weka.core.Utils;
 import weka.core.neighboursearch.LinearNNSearch;
-import weka.core.neighboursearch.NearestNeighbourSearch;
 
 public class TextClassifier {
 
@@ -42,41 +30,35 @@ public class TextClassifier {
 
 	private Stacking stacker;
 
-	private Vote voter;
+	private static Vote voter;
+
+	private Evaluation eval;
 
 	public TextClassifier() {
 		// Clasification Model
 		this.classifier = new IBk();
 		classifier.setKNN(33);
 		classifier.setCrossValidate(true);
-		
-		Tag [] tags =  {
-			new Tag(1, "First option"), 
-			new Tag(2, "Second option"), 
-			new Tag(3, "Third option"),
-			new Tag(4, "Fourth option"), 
-			new Tag(5, "Fifth option"), 
-		};
-		SelectedTag initial = new SelectedTag(2, tags);
-		
+
+		Tag[] tags = { new Tag(1, "WEIGHT_INVERSE")};
+		SelectedTag initial = new SelectedTag(1, tags);
+
 		classifier.setDistanceWeighting(initial);
 		classifier.setNearestNeighbourSearchAlgorithm(new LinearNNSearch());
 
 		this.instances = new TextInstances(ClassificationMode.CLASSIC);
 
-//		for (int j = 0; j < this.instances.getTrainData().numInstances(); j++) {
-//			System.out.println("next instance");
-//			for (int i = 0; i < this.instances.getTrainData().numAttributes(); i++) {
-//				System.out.println(this.instances.getTrainData().get(j).attribute(i));
-//			}
-//		}
-
-		
-
 		this.m1 = new AdaBoostM1();
 		this.bagger = new Bagging();
 		this.stacker = new Stacking();
-		this.voter = new Vote();
+		TextClassifier.voter = new Vote();
+
+		try {
+			this.eval = new Evaluation(this.instances.getTrainData());
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 
 	public void classify() {
@@ -91,7 +73,7 @@ public class TextClassifier {
 
 		bagging();
 
-		Classifier[] classifiers = { new J48(), new NaiveBayes(), new LibSVM(), new RandomTree(), new AdaBoostM1() };
+		Classifier[] classifiers = { new J48(), new NaiveBayes(), new LibSVM(), new RandomTree(), new AdaBoostM1(), classifier};
 
 		stacking(classifiers);
 
@@ -114,7 +96,6 @@ public class TextClassifier {
 		try {
 			m1.buildClassifier(instances.getTrainData());
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
@@ -161,85 +142,47 @@ public class TextClassifier {
 		// Vote ..
 		System.out.println("Voting");
 		voter.setClassifiers(classifiers);// needs one or more classifiers
-
+		
 		try {
 			voter.buildClassifier(instances.getTrainData());
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
+
 
 	public String evaluate() {
 		System.out.println("Evaluation model...");
 
 		// evaluation
 		try {
-			InputMappedClassifier mappedCls = new InputMappedClassifier();
-			mappedCls.setClassifier(voter);
-			mappedCls.setSuppressMappingReport(true);
-			mappedCls.buildClassifier(instances.getTrainData());
+			//Evaluation eval = new Evaluation(instances.getTrainData());
+			eval.evaluateModel(voter, instances.getTestData());
 
-			Evaluation eval = new Evaluation(instances.getTrainData());
-			eval.evaluateModel(mappedCls, instances.getTestData());
-			// eval.crossValidateModel(voter, instances.getTrainData(), 10, new
-			// Random(254));
+			String results = (eval.toSummaryString() + "\n" + eval.toClassDetailsString());
 
-			// Results
-//			for(int i = 0; i < instances.getTestData().numInstances(); i++) {
-//				double result = eval.evaluateModelOnce(mappedCls, instances.getTestData().get(i));
-//				System.out.println(result);
-//			}
-
-			return (eval.toSummaryString() + "\n" + eval.toClassDetailsString());
+			return results;
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 			return "Error during evaluation";
 
 		}
 	}
-
-	public void loadModel(String fileName) {
-		System.out.println("Loading model...");
-		try {
-			ObjectInputStream in = new ObjectInputStream(new FileInputStream(fileName));
-			Object tmp = in.readObject();
-			classifier = (IBk) tmp;
-			in.close();
-			System.out.println("Loaded model: " + fileName);
-		} catch (IOException | ClassNotFoundException e) {
-			e.printStackTrace();
-		}
-	}
-
-	public void saveModel(String fileName) {
-		System.out.println("Saving model...");
-		try {
-			ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(fileName));
-			out.writeObject(classifier);
-			out.close();
-			System.out.println("Saved model: " + fileName);
-		} catch (IOException e) {
-
-			e.printStackTrace();
-		}
-	}
+	
 
 	/**
 	 * Main method. With an example usage of this class.
 	 */
 	public static void main(String[] args) throws Exception {
-		final String MODEL = "data/modelWeka2.model";
 
 		TextClassifier wt = new TextClassifier();
 
-		if (new File(MODEL).exists()) {
-			wt.loadModel(MODEL);
+		if (new File(UtilsFiles.MODEL).exists()) {
+			voter = (Vote) UtilsFiles.loadModel(UtilsFiles.MODEL);
 			wt.classify();
 		} else {
 			wt.classify();
-			// wt.saveModel(MODEL);
+			UtilsFiles.saveModel(voter, UtilsFiles.MODEL);
 		}
 
 		// run evaluation

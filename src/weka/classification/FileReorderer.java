@@ -1,237 +1,205 @@
 package weka.classification;
 
+import java.io.BufferedInputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.SequenceInputStream;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Vector;
 
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
+import org.json.*;
 
-import org.w3c.dom.Document;
+import net.lingala.zip4j.ZipFile;
+import net.lingala.zip4j.exception.ZipException;
+import net.lingala.zip4j.model.ZipParameters;
 
 public class FileReorderer {
+	// Original data
+	private static final String CATEGORIES_DATA = "data/categories";
+	private static final String ORIGINAL_DATA = "data/train";
+	private static final String COMPRESSED_DATA = "data/compressed_data";
+	// Reordered data
+	private static final String REORDERED_DATA = "data/reordered";
 
-	private static final String STOPWORDS_ARFF = "data/trainFiltered.arff";
+	private static Map<String, List<LogInstance>> categories;
+	private static Map<String, Integer> numLogsCategory;
+	private static Map<String, File> files;
 
-	private static final String ORIGINAL_DATA = "data/train/";
-	private static final String UPDATED_DATA = "data/trainUpdated/";
+	public static void main(String[] args) throws Exception {
+		categories = new HashMap<>();
+		files = new HashMap<>();
+		numLogsCategory = new HashMap<>();
 
-	private static final String CATEGORIES_DATA = "data/trainCategories/";
-	private static final String LOG_CATEGORIZED_DATA = "data/trainCategorized/";
+		if (!new File(ORIGINAL_DATA + ".zip").exists()) {
+			try {
+				mergeSplitFiles("data/train_splitted");
+			} catch (ZipException e) {
+				makeSplitFile(ORIGINAL_DATA);
+				mergeSplitFiles("data/train_splitted");
+			}
+		}
 
-	// Xml log-failure-reasons fields
-	private static final String XML_EXAMPLE = "Example";
-	private static final String XML_LOG = "Log";
-	private static final String XML_KEYWORDS = "Keywords";
-	private static final String XML_CATEGORY = "Category";
-	private static final String XML_CHUNK = "Chunk";
+		if (!new File(ORIGINAL_DATA).exists() && !new File(ORIGINAL_DATA).isDirectory()) {
+			uncompressData(ORIGINAL_DATA);
+		}
 
-	// Travis license
-	private static final String TRAVIS_LICENSE = "";
-	
-	static Map<Integer, List<XmlInstance>> categories;
-	static int totalLogs;
+		// Get logs data in a map, with Key = log file name
+		getLogsData();
 
-	private static boolean isALog(File file) {
+		// Unzip all data in "data/categories" directory
+		if (!new File(CATEGORIES_DATA).exists() && !new File(CATEGORIES_DATA).isDirectory()) {
+			uncompressData(CATEGORIES_DATA);
+		}
+
+		// Get categories data from xml files
+		createCategories();
+
+		// Reorder logs according to the category they are in the xml
+		reorganizeLogs();
+
+		System.out.println("Finished reordering files");
+	}
+
+	private static boolean isFileType(File file, String fileExtension) {
 		String fileName = file.getName();
 		if (fileName.lastIndexOf(".") != -1 && fileName.lastIndexOf(".") != 0
-				&& fileName.substring(fileName.lastIndexOf(".") + 1).equals("log")) {
+				&& fileName.substring(fileName.lastIndexOf(".") + 1).equals(fileExtension)) {
 			return true;
 		} else {
 			return false;
 		}
 	}
 
-	public static void main(String[] args) throws Exception {
-		// Create a copy of all logs
-		File directory = new File(ORIGINAL_DATA);
-		File updatedDirectory = new File(UPDATED_DATA);
-		updatedDirectory.mkdir();
-		Map<String, File> files = new HashMap<>();
+	private static void mergeSplitFiles(String path) throws ZipException {
+		System.out.println("Merging data from: " + path);
 
-		totalLogs = 0;
-		
+		ZipFile zip = new ZipFile(new File(path + "/train.zip"));
+		zip.mergeSplitFiles(new File(ORIGINAL_DATA + ".zip"));
+	}
+
+	private static void makeSplitFile(String path) {
+		System.out.println("Making split zip from: " + path);
+		File directory = new File(path);
+		new File("data/train_splitted").mkdir();
+		List<File> logs = new ArrayList<>();
 		for (final File subdirectory : directory.listFiles()) {
-			// File updatedSubdirectory = new File(UPDATED_DATA + subdirectory.getName());
-			// updatedSubdirectory.mkdir();
-			for (final File github : subdirectory.listFiles()) {
-				if (github.isDirectory()) {
-					for (final File failed : github.listFiles()) {
-						if (failed.isDirectory()) {
-							for (final File log : failed.listFiles()) {
-								// File updatedLog = new File(updatedSubdirectory.toPath() + "/" +
-								// log.getName());
-								// File updatedLog = new File(UPDATED_DATA + log.getName());
-								// modify each file to delete certain characters
-
-								// Files.copy(log.toPath(), updatedLog.toPath(),
-								// StandardCopyOption.REPLACE_EXISTING);
-								// updatedLog.createNewFile();
-								// modifyFile(updatedLog);
-								if (isALog(log)) {
-									files.put(log.getName(), log);
-									totalLogs++;
-								}
-							}
-						}
-					}
-				}
+			for (final File log : subdirectory.listFiles()) {
+				logs.add(log);
 			}
 		}
 
+		ZipFile zip = new ZipFile("data/train_splitted" + "/train.zip");
+		try {
+			zip.createSplitZipFile(logs, new ZipParameters(), true, 52428800);
+		} catch (ZipException e) {
+			e.printStackTrace();
+		}
+	}
 
+	private static void uncompressData(String path) {
+		System.out.println("Uncompressing data from: " + path);
+		// new File(path).mkdir();
+
+		try {
+			ZipFile zip = new ZipFile(path + ".zip");
+			zip.extractAll(path);
+
+		} catch (ZipException e) {
+			e.printStackTrace();
+		}
+	}
+
+	private static void getLogsData() {
+		File directory = new File(ORIGINAL_DATA);
+		for (final File subdirectory : directory.listFiles()) {
+			for (final File log : subdirectory.listFiles()) {
+				if (isFileType(log, "txt")) {
+					files.put(log.getName(), log);
+				}
+			}
+		}
+	}
+
+	private static void createCategories() {
 		File directoryCategories = new File(CATEGORIES_DATA);
-		categories = new HashMap<>();
-		DocumentBuilder documentBuilder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
-		for (final File subdirectory : directoryCategories.listFiles()) {
-			for (final File xml : subdirectory.listFiles()) {
-				Document doc = documentBuilder.parse(xml);
-				int n = doc.getElementsByTagName(XML_EXAMPLE).getLength();
-				for (int i = 0; i < n; i++) {
-					String log = doc.getElementsByTagName(XML_LOG).item(i).getTextContent().split("/")[3]; // Get only
-																											// file name
-					String keywords = doc.getElementsByTagName(XML_KEYWORDS).item(i).getTextContent();
-					int category;
-					try {
-						category = Integer.parseInt(doc.getElementsByTagName(XML_CATEGORY).item(i).getTextContent());
-					} catch (NumberFormatException e) {
-						category = -1;
-					}
-					String chunk = doc.getElementsByTagName(XML_CHUNK).item(i).getTextContent();
+		directoryCategories.mkdir();
 
-					// System.out.println(log + " " + keywords);
-					XmlInstance example = new XmlInstance(log, keywords, category, chunk);
-
-					if (!categories.containsKey(category)) {
-						categories.put(category, new ArrayList<XmlInstance>());
-					}
-					categories.get(category).add(example);
-				}
+		for (final File json : directoryCategories.listFiles()) {
+			JSONTokener parser = null;
+			try {
+				parser = new JSONTokener(new FileReader(json.getPath()));
+			} catch (FileNotFoundException e) {
+				e.printStackTrace();
 			}
-		}
-		
-		//size of categories
-//		for (List<XmlInstance> logReports : categories.values()) {
-//			System.out.println(logReports.get(0).getCategory() + "   " + logReports.size());
-//
-//		}
 
-		for (List<XmlInstance> logReports : categories.values()) {
-			int category = logReports.get(0).getCategory();
-			File logsByCategories = new File(LOG_CATEGORIZED_DATA + category +  "cat");
+			JSONObject categories = new JSONObject(parser);
+
+			Iterator<String> keys = categories.keys();
+			while (keys.hasNext()) {
+				String key = keys.next();
+				JSONObject category = (JSONObject) categories.get(key);
+				parseCategory(key, category);
+			}
+
+		}
+	}
+
+	private static void parseCategory(String key, JSONObject category) {
+		try {
+			JSONArray logs = (JSONArray) category.get("logs");
+			int n = logs.length();
+			for (int i = 0; i < n; i++) {
+				if (!categories.containsKey(key)) {
+					categories.put(key, new ArrayList<LogInstance>());
+					numLogsCategory.put(key, 0);
+				}
+				int num = numLogsCategory.get(key);
+				if (num < 70) {
+					LogInstance log = new LogInstance(logs.getString(i) + ".txt", key);
+					categories.get(key).add(log);
+					num++;
+					numLogsCategory.put(key, num);
+				}
+
+			}
+		} catch (Exception e) {
+			System.out.println("Category " + key + " doesnt have logs");
+		}
+
+	}
+
+	private static void reorganizeLogs() throws IOException {
+		new File(REORDERED_DATA).mkdir();
+
+		for (List<LogInstance> logReports : categories.values()) {
+			String category = logReports.get(0).getCategory();
+			category = category.replace("category.", "");
+			File logsByCategories = new File(REORDERED_DATA + "/" + category);
 			logsByCategories.mkdir();
-			// System.out.println(categoryName);
-			// System.out.println("Category: " + logReports.get(0).getCategory());
-			for (XmlInstance xmlLog : logReports) {
-				// System.out.println(xmlLog.getKeywords());
-				if(isImportant(xmlLog)) {
-					System.out.println(xmlLog.getCategory());
-					File log = files.get(xmlLog.getLog());
-					File copyLog = new File(LOG_CATEGORIZED_DATA + category + "cat" + "/"+ log.getName());
+			for (LogInstance log : logReports) {
+				String logName = log.getLog();
+				File logFile;
+				if ((logFile = files.get(logName)) != null) {
+					File copyLog = new File(REORDERED_DATA + "/" + category + "/" + log.getLog());
 
-					Files.copy(log.toPath(), copyLog.toPath(), StandardCopyOption.REPLACE_EXISTING);
+					Files.copy(logFile.toPath(), copyLog.toPath(), StandardCopyOption.REPLACE_EXISTING);
 					copyLog.createNewFile();
-					// System.out.println(log.getAbsolutePath());
 				}
 			}
 		}
-
-		System.out.println("Done");
-		System.exit(0);
-	}
-	
-	private static boolean isImportant(XmlInstance log) {
-		int logsInCategory = categories.get(log.getCategory()).size();
-		int NUM_OF_CATEGORIES = 9;
-		
-		if(logsInCategory >= ((totalLogs / NUM_OF_CATEGORIES) / 2.5)) {
-			return true;
-		} else {
-			return !false;
-		}
-	}
-	private static void modifyFile(File log) {
-		// TODO Auto-generated method stub
-
 	}
 
 }
-
-//		
-//		Instances ins;
-//		// MultiFilter filter = filterBuilderMulti();
-//
-//		if (new File(STOPWORDS_ARFF).exists()) {
-//			ins = TextInstances.loadArff(STOPWORDS_ARFF);
-//		} else {
-//			ins = TextInstances.loadTextDirectory("data/train2/");
-//		}
-//
-//		StringToWordVector filter = new StringToWordVector(1000);
-//		filter.setOutputWordCounts(true);
-//		filter.setDoNotOperateOnPerClassBasis(true);
-//		WordTokenizer tokenizer = new WordTokenizer();
-//		tokenizer.setDelimiters(" \\n 	\\[\\].,;'\\\"()?!-/<>‘’“”…«»•&{[|`^]}$*%");
-//		filter.setTokenizer(tokenizer);
-//
-//		try {
-//			filter.setInputFormat(ins);
-//		} catch (Exception e) {
-//			// TODO Auto-generated catch block
-//			e.printStackTrace();
-//		}
-//		try {
-//			ins = Filter.useFilter(ins, filter);
-//		} catch (Exception e) {
-//			// TODO Auto-generated catch block
-//			e.printStackTrace();
-//		}
-//
-//		// TextInstances.saveArff(ins, STOPWORDS_ARFF);
-//		List<Attribute> attributes = new ArrayList<>();
-//
-//		int n = ins.numAttributes();
-//		for (int i = 0; i < n; i++) {
-//			System.out.println(ins.attribute(i).toString());
-//		}
-//		System.out.println("Done");
-//
-//	}
-//
-//	public static MultiFilter filterBuilderMulti() {
-//		MultiFilter filter = new MultiFilter();
-//		Filter[] filters = new Filter[1];
-//
-//		try {
-//			// StringToWordVector filter
-//
-//			StringToWordVector f1 = new StringToWordVector(150);
-//
-//			// Tokenization
-//			NGramTokenizer tokenizer = new NGramTokenizer();
-//			tokenizer.setDelimiters(" \\n 	\\[\\].,;'\\\"()?!-/<>‘’“”…«»•&{[|`^]}$*%");
-//			f1.setTokenizer(tokenizer);
-//
-//			// Filter options
-//			f1.setDoNotOperateOnPerClassBasis(true);
-//			f1.setOutputWordCounts(true);
-//			f1.setMinTermFreq(200);
-//			f1.setLowerCaseTokens(true);
-//			f1.setDictionaryFileToSaveTo(new File("data/dictionary.txt"));
-//
-//			StringToNominal f2 = new StringToNominal();
-//
-//			filters[0] = f2;
-//
-//		} catch (Exception e) {
-//			e.printStackTrace();
-//		}
-//
-//		filter.setFilters(filters);
-//
-//		return filter;
-//	}
