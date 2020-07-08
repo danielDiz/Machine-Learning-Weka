@@ -46,7 +46,7 @@ public class FileReorderer {
 
 		// Unzip all data in "data/categories" directory
 		if (!new File(CATEGORIES_DATA).exists() && !new File(CATEGORIES_DATA).isDirectory()) {
-			uncompressData(CATEGORIES_DATA);
+			decompressData(CATEGORIES_DATA);
 		}
 
 		// Get categories data from xml files
@@ -71,6 +71,7 @@ public class FileReorderer {
 
 
 	private static void compressAllData(String path) {
+		System.out.println("Compressing data from: " + path);
 		File compressed = new File(COMPRESSED_DATA);
 		compressed.mkdir();
 		File train = new File(path);
@@ -91,6 +92,7 @@ public class FileReorderer {
 	}
 	
 	private static void decompressAllData(String path) {
+		System.out.println("Decompressing data from: " + path);
 		File train = new File(ORIGINAL_DATA);
 		train.mkdir();
 		File compressed = new File(path);
@@ -108,8 +110,8 @@ public class FileReorderer {
 		}
 	}
 
-	private static void uncompressData(String path) {
-		System.out.println("Uncompressing data from: " + path);
+	private static void decompressData(String path) {
+		System.out.println("Decompressing data from: " + path);
 
 		try {
 			ZipFile zip = new ZipFile(path + ".zip");
@@ -201,113 +203,4 @@ public class FileReorderer {
 		}
 	}
 
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-//	private static void mergeSplitFiles(String path) throws ZipException {
-//	System.out.println("Merging data from: " + path);
-//	File directory = new File(path);
-//	new File(COMPRESSED_DATA).mkdir();
-//	for (final File log : directory.listFiles()) {
-//		System.out.println(path + "/" + log.getName() + "/train.zip");
-//		ZipFile zip = new ZipFile(new File(path + "/" + log.getName() + "/train.zip"));
-//
-//		String destination = COMPRESSED_DATA + "/" + log.getName() + ".zip";
-//		if (log.listFiles().length > 1) {
-//			zip.mergeSplitFiles(new File(destination));
-//		} else {
-//			new ZipFile(destination).addFile(path + "/" + log.getName() + "/train.zip");
-//		}
-//	}
-//
-//}
-//
-//private static void decompress(String path) {
-//	File dir = new File(path);
-//	new File(ORIGINAL_DATA).mkdir();
-//	for (final File subdir : dir.listFiles()) {
-//		File newSubdir = new File(
-//				ORIGINAL_DATA + "/" + subdir.getName().substring(0, subdir.getName().lastIndexOf(".")));
-//		newSubdir.mkdir();
-//
-//		ZipFile zip = new ZipFile(subdir);
-//		try {
-//			zip.extractAll(ORIGINAL_DATA + "/" + subdir.getName().substring(0, subdir.getName().lastIndexOf(".")));
-//		} catch (ZipException e) {
-//			System.out.println(newSubdir.getName());
-//		}
-//
-//		for (final File doubleZipped : newSubdir.listFiles()) {
-//			if (isFileType(doubleZipped, "zip")) {
-//				ZipFile doubleZip = new ZipFile(doubleZipped);
-//				try {
-//					doubleZip.extractAll(
-//							ORIGINAL_DATA + "/" + subdir.getName().substring(0, subdir.getName().lastIndexOf(".")));
-//				} catch (ZipException e) {
-//					System.out.println(newSubdir.getName());
-//				}
-//				doubleZipped.delete();
-//			}
-//		}
-//	}
-//}
-//
-//private static void makeSplitFile(String path) {
-//	System.out.println("Making split zip from: " + path);
-//	File directory = new File(path);
-//	new File("data/train_splitted/").mkdir();
-//	for (final File subdirectory : directory.listFiles()) {
-//		List<File> logs = new ArrayList<>();
-//		File splitted_dir = new File("data/train_splitted/" + subdirectory.getName());
-//		if (!splitted_dir.exists()) {
-//			splitted_dir.mkdir();
-//			for (final File log : subdirectory.listFiles()) {
-//				logs.add(log);
-//			}
-//
-//			ZipFile zip = new ZipFile("data/train_splitted/" + subdirectory.getName() + "/train.zip");
-//			try {
-//				zip.createSplitZipFile(logs, new ZipParameters(), true, 73400320); // 70MB
-//			} catch (ZipException e) {
-//				e.printStackTrace();
-//			}
-//		}
-//	}
-//
-//}
 }
