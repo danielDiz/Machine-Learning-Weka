@@ -51,7 +51,9 @@ public class FileReorderer {
 				mergeSplitFiles("data/train_splitted");
 			}
 		}
-
+		
+		
+		System.exit(0);
 		if (!new File(ORIGINAL_DATA).exists() && !new File(ORIGINAL_DATA).isDirectory()) {
 			uncompressData(ORIGINAL_DATA);
 		}
@@ -100,7 +102,6 @@ public class FileReorderer {
 				logs.add(log);
 			}
 		}
-	}
 
 		ZipFile zip = new ZipFile("data/train_splitted" + "/train.zip");
 		try {
@@ -132,8 +133,6 @@ public class FileReorderer {
 				}
 
 			}
-		} catch (Exception e) {
-			e.printStackTrace();
 		}
 	}
 
