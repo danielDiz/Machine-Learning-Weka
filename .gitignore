@@ -7,3 +7,4 @@
 *.json
 /data/train/**
 /data/train.zip
+/data/compressed_data/*
