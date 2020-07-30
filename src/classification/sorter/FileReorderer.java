@@ -1,4 +1,4 @@
-package weka.classification;
+package classification.sorter;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -14,45 +14,40 @@ import java.util.Map;
 
 import org.json.*;
 
+import classification.util.UtilsFiles;
 import net.lingala.zip4j.ZipFile;
 import net.lingala.zip4j.exception.ZipException;
-import net.lingala.zip4j.model.ZipParameters;
 
 public class FileReorderer {
-	// Original data
-	private static final String CATEGORIES_DATA = "data/categories";
-	private static final String ORIGINAL_DATA = "data/train";
-	private static final String COMPRESSED_DATA = "data/compressed_data";
-	// Reordered data
-	private static final String REORDERED_DATA = "data/reordered";
 
 	private static Map<String, List<LogInstance>> categories;
 	private static Map<String, Integer> numLogsCategory;
 	private static Map<String, File> files;
 
 	public static void main(String[] args) throws Exception {
+		System.out.println("Reordering files");
 		categories = new HashMap<>();
 		files = new HashMap<>();
 		numLogsCategory = new HashMap<>();
 
-		if (new File(COMPRESSED_DATA).exists() && !(new File(ORIGINAL_DATA).exists())) {
-			decompressAllData(COMPRESSED_DATA);
-		} else if (new File(ORIGINAL_DATA).exists() && !(new File(COMPRESSED_DATA).exists())) {
-			compressAllData(ORIGINAL_DATA);
+		if (new File(UtilsFiles.COMPRESSED_DATA).exists() && !(new File(UtilsFiles.ORIGINAL_DATA).exists())) {
+			decompressAllData(UtilsFiles.COMPRESSED_DATA);
+		} else if (new File(UtilsFiles.ORIGINAL_DATA).exists() && !(new File(UtilsFiles.COMPRESSED_DATA).exists())) {
+			compressAllData(UtilsFiles.ORIGINAL_DATA);
 		}
 
 		// Get logs data in a map, with Key = log file name
 		getLogsData();
 
 		// Unzip all data in "data/categories" directory
-		if (!new File(CATEGORIES_DATA).exists() && !new File(CATEGORIES_DATA).isDirectory()) {
-			decompressData(CATEGORIES_DATA);
+		if (!new File(UtilsFiles.CATEGORIES_DATA).exists() && !new File(UtilsFiles.CATEGORIES_DATA).isDirectory()) {
+			decompressData(UtilsFiles.CATEGORIES_DATA);
 		}
 
-		// Get categories data from xml files
+		// Get categories data from json files
 		createCategories();
 
-		// Reorder logs according to the category they are in the xml
+		// Reorder logs according to the category they are in the json
 		reorganizeLogs();
 
 		System.out.println("Finished reordering files");
@@ -72,13 +67,13 @@ public class FileReorderer {
 
 	private static void compressAllData(String path) {
 		System.out.println("Compressing data from: " + path);
-		File compressed = new File(COMPRESSED_DATA);
+		File compressed = new File(UtilsFiles.COMPRESSED_DATA);
 		compressed.mkdir();
 		File train = new File(path);
 		for (final File subdirectory : train.listFiles()) {
-			new File(COMPRESSED_DATA + "/" + subdirectory.getName()).mkdir();
+			new File(UtilsFiles.COMPRESSED_DATA + "/" + subdirectory.getName()).mkdir();
 			for (final File log : subdirectory.listFiles()) {
-				String newPath = COMPRESSED_DATA + "/" + subdirectory.getName() + "/"
+				String newPath = UtilsFiles.COMPRESSED_DATA + "/" + subdirectory.getName() + "/"
 						+ log.getName().substring(0, log.getName().lastIndexOf(".")) + ".zip";
 				//System.out.println(newPath);
 				ZipFile zip = new ZipFile(newPath);
@@ -93,13 +88,13 @@ public class FileReorderer {
 	
 	private static void decompressAllData(String path) {
 		System.out.println("Decompressing data from: " + path);
-		File train = new File(ORIGINAL_DATA);
+		File train = new File(UtilsFiles.ORIGINAL_DATA);
 		train.mkdir();
 		File compressed = new File(path);
 		for (final File subdirectory : compressed.listFiles()) {
-			new File(ORIGINAL_DATA + "/" + subdirectory.getName()).mkdir();
+			new File(UtilsFiles.ORIGINAL_DATA + "/" + subdirectory.getName()).mkdir();
 			for (final File log : subdirectory.listFiles()) {
-				String newPath = ORIGINAL_DATA + "/" + subdirectory.getName();
+				String newPath = UtilsFiles.ORIGINAL_DATA + "/" + subdirectory.getName();
 				ZipFile zip = new ZipFile(log);
 				try {
 					zip.extractAll(newPath);
@@ -123,7 +118,8 @@ public class FileReorderer {
 	}
 
 	private static void getLogsData() {
-		File directory = new File(ORIGINAL_DATA);
+		System.out.println("Loading logs data...");
+		File directory = new File(UtilsFiles.ORIGINAL_DATA);
 		for (final File subdirectory : directory.listFiles()) {
 			for (final File log : subdirectory.listFiles()) {
 				if (isFileType(log, "txt")) {
@@ -135,7 +131,8 @@ public class FileReorderer {
 	}
 
 	private static void createCategories() {
-		File directoryCategories = new File(CATEGORIES_DATA);
+		System.out.println("Creating categories...");
+		File directoryCategories = new File(UtilsFiles.CATEGORIES_DATA);
 		directoryCategories.mkdir();
 
 		for (final File json : directoryCategories.listFiles()) {
@@ -177,24 +174,25 @@ public class FileReorderer {
 
 			}
 		} catch (Exception e) {
-			System.out.println("Category " + key + " doesnt have logs");
+			// Error in json, empty list
 		}
 
 	}
 
 	private static void reorganizeLogs() throws IOException {
-		new File(REORDERED_DATA).mkdir();
+		System.out.println("Sorting logs by category...");
+		new File(UtilsFiles.REORDERED_DATA).mkdir();
 
 		for (List<LogInstance> logReports : categories.values()) {
 			String category = logReports.get(0).getCategory();
 			category = category.replace("category.", "");
-			File logsByCategories = new File(REORDERED_DATA + "/" + category);
+			File logsByCategories = new File(UtilsFiles.REORDERED_DATA + "/" + category);
 			logsByCategories.mkdir();
 			for (LogInstance log : logReports) {
 				String logName = log.getLog();
 				File logFile;
 				if ((logFile = files.get(logName)) != null) {
-					File copyLog = new File(REORDERED_DATA + "/" + category + "/" + log.getLog());
+					File copyLog = new File(UtilsFiles.REORDERED_DATA + "/" + category + "/" + log.getLog());
 
 					Files.copy(logFile.toPath(), copyLog.toPath(), StandardCopyOption.REPLACE_EXISTING);
 					copyLog.createNewFile();

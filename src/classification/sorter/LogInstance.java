@@ -1,4 +1,4 @@
-package weka.classification;
+package classification.sorter;
 
 public class LogInstance {
 	private String log;
@@ -25,3 +25,4 @@ public class LogInstance {
 		this.category = category;
 	}
 }
+

@@ -1,12 +1,11 @@
-package weka.classification;
+package classification.text;
 
 import java.io.File;
 
-import weka.classification.TextInstances.ClassificationMode;
+import classification.util.UtilsFiles;
 import weka.classifiers.Classifier;
 import weka.classifiers.Evaluation;
 import weka.classifiers.bayes.NaiveBayes;
-import weka.classifiers.functions.LibSVM;
 import weka.classifiers.lazy.IBk;
 import weka.classifiers.meta.AdaBoostM1;
 import weka.classifiers.meta.Bagging;
@@ -18,11 +17,11 @@ import weka.core.SelectedTag;
 import weka.core.Tag;
 import weka.core.neighboursearch.LinearNNSearch;
 
-public class TextClassifier {
+public class ModelBuilder {
 
 	private IBk classifier;
 
-	private TextInstances instances;
+	private InstancesBuilder instances;
 
 	private AdaBoostM1 m1;
 
@@ -34,35 +33,33 @@ public class TextClassifier {
 
 	private Evaluation eval;
 
-	public TextClassifier() {
-		// Clasification Model
+	public ModelBuilder() {
+		// Classification Model
 		this.classifier = new IBk();
 		classifier.setKNN(33);
 		classifier.setCrossValidate(true);
 
-		Tag[] tags = { new Tag(1, "WEIGHT_INVERSE")};
+		Tag[] tags = { new Tag(1, "WEIGHT_INVERSE") };
 		SelectedTag initial = new SelectedTag(1, tags);
 
 		classifier.setDistanceWeighting(initial);
 		classifier.setNearestNeighbourSearchAlgorithm(new LinearNNSearch());
 
-		this.instances = new TextInstances(ClassificationMode.CLASSIC);
+		this.instances = new InstancesBuilder();
 
 		this.m1 = new AdaBoostM1();
 		this.bagger = new Bagging();
 		this.stacker = new Stacking();
-		TextClassifier.voter = new Vote();
+		ModelBuilder.voter = new Vote();
 
 		try {
 			this.eval = new Evaluation(this.instances.getTrainData());
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
 
 	public void classify() {
-		long startTime = System.currentTimeMillis();
 		try {
 			classifier.buildClassifier(this.instances.getTrainData());
 		} catch (Exception e) {
@@ -73,14 +70,11 @@ public class TextClassifier {
 
 		bagging();
 
-		Classifier[] classifiers = { new J48(), new NaiveBayes(), new LibSVM(), new RandomTree(), new AdaBoostM1(), classifier};
+		Classifier[] classifiers = { new J48(), new NaiveBayes(), new RandomTree(), new IBk() };
 
 		stacking(classifiers);
 
 		voting(classifiers);
-
-		long endTime = System.currentTimeMillis();
-		System.out.println("Time taken: " + (endTime - startTime) + "ms");
 	}
 
 	private void boosting() {
@@ -140,9 +134,9 @@ public class TextClassifier {
 		 * estimates for classification are available.
 		 */
 		// Vote ..
-		System.out.println("Voting");
+		System.out.println("Voting...");
 		voter.setClassifiers(classifiers);// needs one or more classifiers
-		
+
 		try {
 			voter.buildClassifier(instances.getTrainData());
 		} catch (Exception e) {
@@ -150,17 +144,18 @@ public class TextClassifier {
 		}
 	}
 
-
 	public String evaluate() {
-		System.out.println("Evaluation model...");
+		System.out.println("Evaluating model...");
 
 		// evaluation
 		try {
-			//Evaluation eval = new Evaluation(instances.getTrainData());
+			// Evaluation eval = new Evaluation(instances.getTrainData());
 			eval.evaluateModel(voter, instances.getTestData());
 
-			String results = (eval.toSummaryString() + "\n" + eval.toClassDetailsString());
-
+			String results = (eval.toSummaryString() + "\n" 
+			+ eval.toClassDetailsString() + "\n"
+			+ eval.toMatrixString());
+			
 			return results;
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -168,18 +163,16 @@ public class TextClassifier {
 
 		}
 	}
-	
 
 	/**
 	 * Main method. With an example usage of this class.
 	 */
 	public static void main(String[] args) throws Exception {
-
-		TextClassifier wt = new TextClassifier();
+		ModelBuilder wt = new ModelBuilder();
 
 		if (new File(UtilsFiles.MODEL).exists()) {
-			voter = (Vote) UtilsFiles.loadModel(UtilsFiles.MODEL);
-			wt.classify();
+			voter = UtilsFiles.loadModel(UtilsFiles.MODEL);
+			// wt.classify();
 		} else {
 			wt.classify();
 			UtilsFiles.saveModel(voter, UtilsFiles.MODEL);
@@ -187,7 +180,5 @@ public class TextClassifier {
 
 		// run evaluation
 		System.out.println("Evaluation Result: \n" + wt.evaluate());
-
 	}
-
 }

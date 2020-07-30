@@ -1,13 +1,14 @@
-package weka.classification;
+package classification.text;
 
 import java.io.File;
 
+import classification.sorter.FileReorderer;
+import classification.util.UtilsFiles;
 import weka.attributeSelection.BestFirst;
 import weka.attributeSelection.CfsSubsetEval;
 import weka.core.Instances;
 import weka.core.OptionHandler;
 import weka.core.Utils;
-import weka.core.stopwords.WordsFromFile;
 import weka.core.tokenizers.NGramTokenizer;
 import weka.filters.Filter;
 import weka.filters.supervised.attribute.AttributeSelection;
@@ -15,12 +16,7 @@ import weka.filters.supervised.instance.StratifiedRemoveFolds;
 import weka.filters.unsupervised.attribute.RemoveByName;
 import weka.filters.unsupervised.attribute.StringToWordVector;
 
-public class TextInstances {
-
-	enum ClassificationMode {
-		CLASSIC, CLUSTER
-	}
-
+public class InstancesBuilder {
 	// declare train and test data Instances
 	private Instances trainData;
 	private Instances testData;
@@ -29,24 +25,28 @@ public class TextInstances {
 
 	private final int NUM_OF_WORDS = 400;
 
-	public TextInstances(ClassificationMode mode) {
+	public InstancesBuilder() {
+		if (!new File(UtilsFiles.REORDERED_DATA).exists()) {
+			// Call file reorderer if the data is not sorted
+			try {
+				FileReorderer.main(null);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+
 		if (new File(UtilsFiles.TRAIN_ARFF).exists() && new File(UtilsFiles.TEST_ARFF).exists()) {
 			this.trainData = UtilsFiles.loadArff(UtilsFiles.TRAIN_ARFF);
 			this.testData = UtilsFiles.loadArff(UtilsFiles.TEST_ARFF);
 
-			// Set number of attributes if classic mode
-			if (mode.equals(ClassificationMode.CLASSIC)) {
-				this.trainData.setClassIndex(trainData.numAttributes() - 1);
-
-				this.testData.setClassIndex(testData.numAttributes() - 1);
-			}
+			// Set number of attributes {
+			this.trainData.setClassIndex(trainData.numAttributes() - 1);
+			this.testData.setClassIndex(testData.numAttributes() - 1);
 
 		} else {
-			Instances rawData = UtilsFiles.loadTextDirectory(UtilsFiles.TRAIN_DATA);
+			Instances rawData = UtilsFiles.loadTextDirectory(UtilsFiles.REORDERED_DATA);
 
-			if (mode.equals(ClassificationMode.CLASSIC)) {
-				rawData.setClassIndex(rawData.numAttributes() - 1);
-			}
+			rawData.setClassIndex(rawData.numAttributes() - 1);
 
 			System.out.println("Filtering data...");
 
@@ -62,7 +62,7 @@ public class TextInstances {
 			// Split data
 			splitTrainTest(3, rawData);
 
-			System.out.println("done with instances");
+			System.out.println("Instances created");
 
 			// Save in arff files
 			UtilsFiles.saveArff(trainData, UtilsFiles.TRAIN_ARFF);
@@ -92,15 +92,6 @@ public class TextInstances {
 			filter.setMinTermFreq(1);
 			filter.setOutputWordCounts(true);
 
-			// Stopwords
-			if (new File(UtilsFiles.STOP_WORD_LIST).exists()) {
-				WordsFromFile stopwords = new WordsFromFile();
-				stopwords.setStopwords(new File(UtilsFiles.STOP_WORD_LIST));
-
-				// filter.setStopwordsHandler(stopwords); // 3.6.xx or above (confirmed 3.8.x)
-				// filter.setStopwords(new File("data/stopwords.txt")); //version 3.6.x or lower
-			}
-
 			filter.setInputFormat(ins);
 
 		} catch (Exception e) {
@@ -119,7 +110,7 @@ public class TextInstances {
 	// RemoveByName filtering
 	private Instances filterRemoveByName(Instances ins) {
 		RemoveByName filter = new RemoveByName();
-		filter.setExpression("\\p{L}+"); // only utf-8 chars //TODO: add @ # etc
+		filter.setExpression("\\p{L}+"); // only utf-8 chars
 		filter.setInvertSelection(true);
 
 		try {
@@ -140,20 +131,7 @@ public class TextInstances {
 		AttributeSelection filter = new AttributeSelection();
 
 		CfsSubsetEval eval = new CfsSubsetEval();
-
-		try {
-			((OptionHandler) eval).setOptions(Utils.splitOptions("CFS_SUBSET_EVAL_CONFIG"));
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-
 		BestFirst search = new BestFirst();
-
-		try {
-			search.setOptions(Utils.splitOptions("-D 1 -N 5 -S 0"));
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
 
 		filter.setEvaluator(eval);
 		filter.setSearch(search);

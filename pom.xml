@@ -24,16 +24,6 @@
 		</dependency>
 		<dependency>
 			<groupId>nz.ac.waikato.cms.weka</groupId>
-			<artifactId>LibSVM</artifactId>
-			<version>1.0.10</version>
-		</dependency>
-		<dependency>
-			<groupId>tw.edu.ntu.csie</groupId>
-			<artifactId>libsvm</artifactId>
-			<version>3.24</version>
-		</dependency>
-		<dependency>
-			<groupId>nz.ac.waikato.cms.weka</groupId>
 			<artifactId>weka-dev</artifactId>
 			<version>3.9.4</version>
 		</dependency>
@@ -51,10 +41,4 @@
 			</plugin>
 		</plugins>
 	</build>
-	<repositories>
-		<repository>
-			<id>local-repository</id>
-			<url>file://${basedir}/repo</url>
-		</repository>
-	</repositories>
 </project>
