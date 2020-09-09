@@ -150,19 +150,22 @@ public class InstancesBuilder {
 	}
 
 	private void splitTrainTest(int folds, Instances data) {
+		final String relationName = "logs_classification";
 		try {
 			StratifiedRemoveFolds dataSplitterTrain = new StratifiedRemoveFolds();
 			dataSplitterTrain.setNumFolds(folds);
 			dataSplitterTrain.setInputFormat(data);
 			dataSplitterTrain.setInvertSelection(true);
 			trainData = Filter.useFilter(data, dataSplitterTrain);
+			trainData.setRelationName(relationName + "_train_data");
 
 			StratifiedRemoveFolds dataSplitterTest = new StratifiedRemoveFolds();
 			dataSplitterTest.setNumFolds(folds);
 			dataSplitterTest.setInputFormat(data);
 			dataSplitterTest.setInvertSelection(false);
 			testData = Filter.useFilter(data, dataSplitterTest);
-
+			trainData.setRelationName(relationName + "_test_data");
+			
 			data.clear();
 
 		} catch (Exception e) {
