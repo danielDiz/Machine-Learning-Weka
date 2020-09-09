@@ -164,7 +164,7 @@ public class InstancesBuilder {
 			dataSplitterTest.setInputFormat(data);
 			dataSplitterTest.setInvertSelection(false);
 			testData = Filter.useFilter(data, dataSplitterTest);
-			trainData.setRelationName(relationName + "_test_data");
+			testData.setRelationName(relationName + "_test_data");
 			
 			data.clear();
 
